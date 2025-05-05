@@ -146,6 +146,7 @@ def run_training(dataset_name_or_id: Union[str, int],
                  only_run_validation: bool = False,
                  disable_checkpointing: bool = False,
                  val_with_best: bool = False,
+                 disable_tta: bool = False,
                  device: torch.device = torch.device('cuda')):
     if plans_identifier == 'nnUNetPlans':
         print("\n############################\n"
@@ -209,7 +210,7 @@ def run_training(dataset_name_or_id: Union[str, int],
 
         if val_with_best:
             nnunet_trainer.load_checkpoint(join(nnunet_trainer.output_folder, 'checkpoint_best.pth'))
-        nnunet_trainer.perform_actual_validation(export_validation_probabilities)
+        nnunet_trainer.perform_actual_validation(export_validation_probabilities, disable_tta)
 
 
 def run_training_entry():
@@ -249,6 +250,9 @@ def run_training_entry():
                     help="Use this to set the device the training should run with. Available options are 'cuda' "
                          "(GPU), 'cpu' (CPU) and 'mps' (Apple M1/M2). Do NOT use this to set which GPU ID! "
                          "Use CUDA_VISIBLE_DEVICES=X nnUNetv2_train [...] instead!")
+    parser.add_argument('--disable_tta', action='store_true', required=False, default=False,
+                        help='Set this flag to disable test time data augmentation in the form of mirroring. Faster, '
+                             'but less accurate inference. Not recommended.')
     args = parser.parse_args()
 
     assert args.device in ['cpu', 'cuda', 'mps'], f'-device must be either cpu, mps or cuda. Other devices are not tested/supported. Got: {args.device}.'
@@ -266,7 +270,7 @@ def run_training_entry():
         device = torch.device('mps')
 
     run_training(args.dataset_name_or_id, args.configuration, args.fold, args.tr, args.p, args.pretrained_weights,
-                 args.num_gpus, args.npz, args.c, args.val, args.disable_checkpointing, args.val_best,
+                 args.num_gpus, args.npz, args.c, args.val, args.disable_checkpointing, args.val_best, args.disable_tta,
                  device=device)
 
 

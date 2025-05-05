@@ -739,7 +739,7 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
 
         super().on_epoch_end()
 
-    def perform_actual_validation(self, save_probabilities: bool = False):
+    def perform_actual_validation(self, save_probabilities: bool = False, disable_tta: bool = False):
         start_time = time.time()
         self.set_deep_supervision_enabled(False)
         self.network.eval()
@@ -754,7 +754,7 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
                                    "forward pass (where compile is triggered) already has deep supervision disabled. "
                                    "This is exactly what we need in perform_actual_validation")
 
-        predictor = nnUNetPredictorWithClassification(tile_step_size=0.5, use_gaussian=True, use_mirroring=True,
+        predictor = nnUNetPredictorWithClassification(tile_step_size=0.5, use_gaussian=True, use_mirroring=disable_tta,
                                     perform_everything_on_device=True, device=self.device, verbose=False,
                                     verbose_preprocessing=False, allow_tqdm=False, num_classification_classes=self.num_classes)
         

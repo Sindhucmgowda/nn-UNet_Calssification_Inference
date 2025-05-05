@@ -115,3 +115,7 @@ if __name__ == "__main__":
     
     # running plan and preprocess 
     os.system(f'nnUNetv2_plan_and_preprocess -d {args.dataset_id} -np 4 -pl nnUNetPlannerResEncM --verify_dataset_integrity') 
+
+    # running plan and preprocess with torch re-sampling 
+    os.system(f'nnUNetv2_plan_and_preprocess -d {args.dataset_id} -np 4 -pl nnUNetPlannerResEncM_torchres --verify_dataset_integrity -gpu_memory_target 16 ') 
+    
