@@ -72,6 +72,13 @@ def convert_predicted_logits_to_segmentation_with_correct_shape(predicted_logits
         torch.set_num_threads(old_threads)
         return segmentation_reverted_cropping
 
+def export_cls_prediction_from_logits(cls_pred, k, output_filename):
+    # save csv file with identifier, cls_pred
+    # cls_pred and k must have batch dimension
+    with open(output_filename, 'w') as f:
+        for i, pred in enumerate(cls_pred):
+            f.write(f"{k[i]},{pred}\n")
+
 
 def export_prediction_from_logits(predicted_array_or_file: Union[np.ndarray, torch.Tensor], properties_dict: dict,
                                   configuration_manager: ConfigurationManager,

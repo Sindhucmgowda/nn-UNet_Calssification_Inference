@@ -791,9 +791,6 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
             pbar = tqdm.tqdm(enumerate(dataset_val.identifiers), total=len(dataset_val.identifiers),
                              desc="Generating predictions")
             for i, k in pbar:
-
-                if i > 4:
-                    break
                 
                 case_start_time = time.time()
                 proceed = not check_workers_alive_and_busy(segmentation_export_pool, worker_list, results,
@@ -831,10 +828,8 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
                 })
                 
                 prediction = prediction.cpu()
-                
                 # Add batch dimension to prediction
                 prediction = prediction.unsqueeze(0)
-                
                 prediction, cls_output = self.network.unwrap_network_outputs(prediction, mean_cls=True)
                 
                 # seg_output_seg = prediction.argmax(1)[:, None].numpy()
