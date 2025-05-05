@@ -102,8 +102,16 @@ Use the same parameters used during training and
 
 ## Results
 
-### Performance on Common Datasets
-| Dataset | Architecture | Dice Score | HD95 (mm) |
+### Segmentation and Classification Performance 
+| Model | Pancreas DSC | Lesion DSC  | Macro - F1 |
 |---------|-------------|------------|-----------|
-| Task001 | 3D Full Res | 0.89 | 4.2 |
-| Task002 | 2D | 0.85 | 5.1 |
+| nnUNetTrainerClsFeatureSharing | 0.818 | 0.685 | 0.181 |
+| nnUNetTrainerAgClassEnc | 0.858 | 0.737 | 0.196 |
+
+### Inference 
+
+| Planner | Average Inference Time | Pancreas DSC | Lesion DSC |
+|---------|-------------|------------|-----------|
+| ResEncM | 5.98 | 0.858 | 0.713  |
+| ResEnctorchres | 5.41 | 0.856 | 0.755 |
+| ResEnctorchres no TTA | 1.8 | 0.86 | 0.764 |

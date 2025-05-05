@@ -650,7 +650,7 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
                 os.makedirs(save_path, exist_ok=True)
                 plt.savefig(os.path.join(save_path, f'epoch_{self.current_epoch}_case_{case_idx}.png'))
                 plt.close()
-        
+
     def run_training(self):
         '''
         Copy of run_training method from nnUNetTrainer.py with prints added
@@ -739,8 +739,46 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
 
         super().on_epoch_end()
 
+    def evaluate_validation_performance_visualization(self, data, target, seg_output, case_idx): 
+        # Convert to numpy arrays
+        data = data.cpu().numpy()
+        target = target
+        seg_pred = seg_output.argmax(1).cpu().numpy()
+        
+        # Create figure with GridSpec
+        fig = plt.figure(figsize=(15, 5))
+        gs = GridSpec(1, 3, figure=fig)
+        
+        # For 3D volumes, take middle slice
+        slice_idx = data.shape[2] // 2
+        
+        # Plot input
+        ax = fig.add_subplot(gs[0])
+        ax.imshow(data[0, slice_idx], cmap='gray')
+        ax.set_title('Input')
+        ax.axis('off')
+        
+        # Plot ground truth
+        ax = fig.add_subplot(gs[1])
+        ax.imshow(target[0, slice_idx], cmap='viridis')
+        ax.set_title('Ground Truth')
+        ax.axis('off')
+        
+        # Plot prediction
+        ax = fig.add_subplot(gs[2])
+        ax.imshow(seg_pred[0, slice_idx], cmap='viridis')
+        ax.set_title('Prediction')
+        ax.axis('off')
+        
+        plt.title(f'Validation Case {case_idx + 1}')
+        
+        # Save the figure
+        save_path = os.path.join(self.output_folder, 'evaluation_validation_visualizations')
+        os.makedirs(save_path, exist_ok=True)
+        plt.savefig(os.path.join(save_path, f'epoch_{self.current_epoch}_case_{case_idx}.png'))
+        plt.close()
+        
     def perform_actual_validation(self, save_probabilities: bool = False, disable_tta: bool = False):
-        start_time = time.time()
         self.set_deep_supervision_enabled(False)
         self.network.eval()
 
@@ -792,7 +830,6 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
                              desc="Generating predictions")
             for i, k in pbar:
                 
-                case_start_time = time.time()
                 proceed = not check_workers_alive_and_busy(segmentation_export_pool, worker_list, results,
                                                            allowed_num_queued=2)
                 while not proceed:
@@ -804,7 +841,7 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
                 data, targets , seg_prev, properties = dataset_val.load_case(k)
 
                 # we do [:] to convert blosc2 to numpy
-                data = data[:]
+                data = data[:]; targets = targets[:]
 
                 if self.is_cascaded:
                     seg_prev = seg_prev[:]
@@ -833,7 +870,8 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
                 prediction, cls_output = self.network.unwrap_network_outputs(prediction, mean_cls=True)
                 
                 # seg_output_seg = prediction.argmax(1)[:, None].numpy()
-                
+                self.evaluate_validation_performance_visualization(data, targets, prediction, i)
+
                 cls_label = int(k.split('_')[2])
                 cls_pred = cls_output.argmax(1).cpu().numpy()                
                 data = data.to(self.device, non_blocking=True)
@@ -865,7 +903,7 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
                     )
                 )
 
-                case_time = time.time() - case_start_time
+                case_time = end_time - start_time
                 case_times.append(case_time)
                 self.print_to_log_file(f"Time taken for case {k}: {case_time:.2f} seconds")
 
@@ -912,9 +950,15 @@ class nnUNetTrainerWithClassification(nnUNetTrainer):
                 if self.is_ddp and i < last_barrier_at_idx and (i + 1) % 20 == 0:
                     dist.barrier()
 
+            # Wait for all results to complete before closing the pool
+            for r in results:
+                r.wait()
             _ = [r.get() for r in results]
 
-            
+            # Close the pool and wait for all processes to finish
+            segmentation_export_pool.close()
+            segmentation_export_pool.join()
+
         if self.is_ddp:
             dist.barrier()
 

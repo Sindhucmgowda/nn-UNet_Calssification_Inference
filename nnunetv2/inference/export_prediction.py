@@ -75,10 +75,13 @@ def convert_predicted_logits_to_segmentation_with_correct_shape(predicted_logits
 def export_cls_prediction_from_logits(cls_pred, k, output_filename):
     # save csv file with identifier, cls_pred
     # cls_pred and k must have batch dimension
-    with open(output_filename, 'w') as f:
+    if not isinstance(k, list):
+      k = [k]
+
+    assert len(k) == len(cls_pred), 'Got different sized keys and predictions in export_cls_prediction_from_logits'
+    with open(output_filename, 'a') as f:
         for i, pred in enumerate(cls_pred):
             f.write(f"{k[i]},{pred}\n")
-
 
 def export_prediction_from_logits(predicted_array_or_file: Union[np.ndarray, torch.Tensor], properties_dict: dict,
                                   configuration_manager: ConfigurationManager,
