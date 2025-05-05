@@ -28,7 +28,6 @@ def find_free_network_port() -> int:
     s.close()
     return port
 
-
 def get_trainer_from_args(dataset_name_or_id: Union[int, str],
                           configuration: str,
                           fold: int,
@@ -85,6 +84,8 @@ def maybe_load_checkpoint(nnunet_trainer: nnUNetTrainer, continue_training: bool
             expected_checkpoint_file = None
     elif validation_only:
         expected_checkpoint_file = join(nnunet_trainer.output_folder, 'checkpoint_final.pth')
+        if not isfile(expected_checkpoint_file):
+            expected_checkpoint_file = join(nnunet_trainer.output_folder, 'checkpoint_latest.pth')
         if not isfile(expected_checkpoint_file):
             raise RuntimeError(f"Cannot run validation because the training is not finished yet!")
     else:
@@ -274,6 +275,6 @@ if __name__ == '__main__':
     os.environ['MKL_NUM_THREADS'] = '1'
     os.environ['OPENBLAS_NUM_THREADS'] = '1'
     # reduces the number of threads used for compiling. More threads don't help and can cause problems
-    os.environ['TORCHINDUCTOR_COMPILE_THREADS'] = 1
+    os.environ['TORCHINDUCTOR_COMPILE_THREADS'] = '1'
     # multiprocessing.set_start_method("spawn")
     run_training_entry()
